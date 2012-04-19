@@ -43,6 +43,6 @@ sudo pip2 install virtualenvwrapper               # note that there is a arch li
 # Update .bash_profile
 echo "export WORKON_HOME=$HOME/.virtualenvs" >> ~/.bash_profile
 echo "export PROJECT_HOME=$HOME/work" >> ~/.bash_profile
-echo "source /usr/bin/virtualenvwrapper.sh" >> ~/.bash_profile
+echo "source `which virtualenvwrapper.sh`" >> ~/.bash_profile
 source ~/.bash_profile
 mkdir $PROJECT_HOME

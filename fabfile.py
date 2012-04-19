@@ -34,12 +34,12 @@ from fabric.context_managers import prefix
 from fabric.contrib import django
 
 # Global Environment Variables
-env.activate = 'source ~/.bash_profile; source `which virtualenvwrapper.sh`; workon bbox'
 django.settings_module('proj.settings')
 from django.conf import settings
-db = settings.DATABASES
 env.project_name = settings.PROJECT_NAME
 env.project_sites = settings.PROJECT_SITES
+env.activate = 'source ~/.bash_profile; source `which virtualenvwrapper.sh`; workon {0}'.format(settings.PROJECT_NAME)
+db = settings.DATABASES
 
 
 ##########################
@@ -123,7 +123,7 @@ def server_setup_community_repo():
     sudo('pacman -Syy yaourt --noconfirm')
 
 
-def server_setup_clean():
+def server_setup_mirror():
     """Installs necessary packages on host, depending on distro specified"""
     # Here are the arch-specific installs
     country = "Singapore"
@@ -135,7 +135,13 @@ def server_setup_clean():
     sudo('mv -if /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.orig;')
     print('Rotating the new list into place...')
     sudo('mv -i "{0}" /etc/pacman.d/mirrorlist;'.format(tmpfile))
-    run("echo \"PS1='\\[\\033[0;31m\\]\\H \\l \\[\\033[1;33m\\]\\d \\[\\033[1;36m\\]\\t\\[\\033[0;32m\\] |\\w|\\[\\033[0m\\]\n\\u\\$ ';\" > ~/.bash_profile")
+
+
+def server_setup_bash_profile():
+    sudo("echo \"PS1='\\[\\033[0;31m\\]\\H \\l \\[\\033[1;33m\\]\\d \\[\\033[1;36m\\]\\t\\[\\033[0;32m\\] |\\w|\\[\\033[0m\\]\n\\u\\$ ';\" > ~/.bash_profile")
+
+
+def server_setup_base():
     sudo('pacman -Syy --noconfirm')
     sudo('pacman -S tzdata')
     sudo('pacman -Sy pacman --noconfirm')
@@ -146,9 +152,18 @@ def server_setup_clean():
 
 def server_setup_python():
     sudo('pacman -S python2 --noconfirm')
+    sudo('ln -s /usr/bin/python2 /usr/local/bin/python')  # handle arch-specific quirk
     sudo('pacman -S python2-distribute --noconfirm')
     sudo('pacman -S python2-pip --noconfirm')
     sudo('pip2 install virtualenvwrapper')
+
+
+def server_setup_python_env():
+    sudo('echo \'export WORKON_HOME=$HOME/.virtualenvs\' >> ~/.bash_profile')
+    sudo('echo \'export PROJECT_HOME=$HOME/work\' >> ~/.bash_profile')
+    sudo('echo \'source `which virtualenvwrapper.sh`\' >> ~/.bash_profile')
+    with prefix(env.activate):
+        sudo('mkdir $PROJECT_HOME')
 
 
 def server_setup(user, target):
@@ -157,15 +172,17 @@ def server_setup(user, target):
     elif target == 'dev':
         env_development()
         env.user = user
-        print env
     elif target == 'prod':
         env_production()
 
-    server_setup_clean()
-    server_setup_community_repo()
-    server_setup_fullsystemupgrade()
-    server_setup_standardpackages()
-    server_setup_python()
+    #server_setup_mirror()
+    server_setup_bash_profile()
+    #server_setup_base()
+    #server_setup_community_repo()
+    #server_setup_fullsystemupgrade()
+    #server_setup_standardpackages()
+    #server_setup_python()
+    #server_setup_python_env()
 
 
 ##########################
